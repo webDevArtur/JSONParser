@@ -3,50 +3,40 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const dJSON = require("dirty-json");
-const he = require('he');
+const he = require("he");
 
 const app = express();
 const port = 8080;
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.text({ type: ["text/plain", "application/json"] }));
 
 function removeBBCode(str) {
-    if (!str) return "";
-    return str.replace(/\[\/?[\w=\-\s":.#]+\]/g, "");
+  return str?.replace(/\[\/?[\w=\-\s":.#]+\]/g, "") || "";
 }
 
 function extractJsonString(input) {
-    const match = input.match(/'text=(\{.*\})'/s);
-    if (match && match[1]) {
-        return match[1].trim();
-    }
-    return input.trim();
+  const match = input.match(/(?:'text=)?(\{.*\})/s);
+  return match?.[1]?.trim() || input.trim();
 }
 
-app.post('', (req, res) => {
-    const inputText = req.body.text;
+app.post("/process", (req, res) => {
+  try {
+    const inputText = req.body;
+    if (!inputText) throw new Error("Пустой входной текст");
 
-    if (!inputText) {
-        return res.status(400).json({ error: 'Пустой входной текст' });
+    const jsonStr = extractJsonString(inputText);
+    const parsed = dJSON.parse(jsonStr);
+
+    if (parsed.comment) {
+      parsed.comment = removeBBCode(he.decode(parsed.comment));
     }
 
-    try {
-        const jsonStr = extractJsonString(inputText);
-
-        const parsed = dJSON.parse(jsonStr);
-
-        if (parsed.comment) {
-            parsed.comment = he.decode(parsed.comment);
-            parsed.comment = removeBBCode(parsed.comment);
-        }
-
-        res.json(parsed);
-    } catch (e) {
-        res.status(500).json({ error: `Ошибка при парсинге dirty-json: ${e.message}` });
-    }
+    res.json(parsed);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Сервер слушает http://localhost:${port}`);
 });
