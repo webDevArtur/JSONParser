@@ -24,7 +24,7 @@ function extractJsonString(input) {
     return input.trim();
 }
 
-app.post('/process', (req, res) => {
+app.post('', (req, res) => {
     const inputText = req.body.text;
 
     if (!inputText) {
