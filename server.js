@@ -31,7 +31,7 @@ app.post("/process", (req, res) => {
       parsed.comment = removeBBCode(he.decode(parsed.comment));
     }
 
-    res.json(parsed);
+    res.type("json").send(JSON.stringify(parsed));
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
